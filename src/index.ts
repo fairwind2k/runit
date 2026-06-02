@@ -2,14 +2,16 @@ import { fastify } from 'fastify';
 import { fastifyTRPCPlugin, FastifyTRPCPluginOptions, } from '@trpc/server/adapters/fastify';
 
 import { runMigrations } from './db/connection';
+import { seedHomePageData } from './db/seedHomePageData';
 import { appRouter, type AppRouter } from './router/index';
 // import { createContext } from './context';
 
 const getApp = async () => {
    try {
     await runMigrations();
+    await seedHomePageData();
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error('Migration/Seeding failed:', error);
     throw error;
   }
  
