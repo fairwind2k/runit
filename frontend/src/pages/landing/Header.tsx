@@ -41,9 +41,10 @@ export function Header() {
     dispatch(actions.openModal({ type: 'signingUp' }));
   };
 
-  const handleRedirToSignIn = () => {
-    redir(routes.signInPagePath());
-  };
+
+    const handleOpenSignInModal = () => {
+    dispatch(actions.openModal({ type: 'signingIn' })); 
+  }
 
   const [drawerOpened, { toggle: toggleDrawer, close: closeDrawer }] =
     useDisclosure(false);
@@ -80,7 +81,7 @@ export function Header() {
           <Button
             variant="default"
             radius="xl"
-            onClick={() => handleRedirToSignIn()}
+            onClick={() => handleOpenSignInModal()}
           >
             {profileTextContent('signIn')}
           </Button>
@@ -119,7 +120,7 @@ export function Header() {
             <Button variant="default" onClick={() => handleOpenSignUpModal()}>
               <span>{profileTextContent('signUp')}</span>
             </Button>
-            <Button onClick={() => handleRedirToSignIn()}>
+            <Button onClick={() => handleOpenSignInModal()}>
               <span>{profileTextContent('signIn')}</span>
             </Button>
           </Group>
