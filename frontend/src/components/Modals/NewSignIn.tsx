@@ -2,18 +2,21 @@ import { Anchor, Divider, Group, Modal, Title } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 
-import NewSignUpForm from '../Forms/SignUpForm/NewSignUpForm';
+import NewSignInForm from '../Forms/SignInForm/NewSignInForm';
 import SocialButtons from './SocialButtons/SocialButtons';
 import { actions } from '../../slices';
 
 /**
- * Модальное окно регистрации.
+ * Модальное окно входа.
  *
- * Содержит форму регистрации, ссылку на сброс пароля,
- * ссылку на модальное окно входа и кнопки социальных сетей.
+ * Содержит форму входа, ссылку на сброс пароля,
+ * ссылку на регистрацию и кнопки социальных сетей.
  */
 
-function NewSignUpModal({ handleClose, isOpen }) {
+function NewSignInModal({ handleClose, isOpen }) {
+  const { t: signInText } = useTranslation('translation', {
+    keyPrefix: 'signIn',
+  });
   const { t: signUpText } = useTranslation('translation', {
     keyPrefix: 'signUp',
   });
@@ -30,26 +33,25 @@ function NewSignUpModal({ handleClose, isOpen }) {
         blur: 3,
       }}
       radius="md"
-      styles={{
-        content: {
-          height: 'auto',
-        },
-      }}
+      size="md"
       title={
         <Title fw={700} order={3}>
-          {signUpText('pageHeader')}
+          {signInText('header')}
         </Title>
       }
     >
-      <NewSignUpForm />
-      <Group justify="center">
+      <NewSignInForm />
+      <Group justify="space-between">
+        <Anchor c="dimmed" href="" mt="md" size="sm">
+          {signInText('forgotPass')}
+        </Anchor>
         <Anchor
           c="dimmed"
           mt="md"
-          onClick={() => dispatch(actions.openModal({ type: 'signingIn' }))}
+          onClick={() => dispatch(actions.openModal({ type: 'signingUp' }))}
           size="sm"
         >
-          {signUpText('haveAnAccount')}
+          {signInText('createAnAccount')}
         </Anchor>
       </Group>
       <Divider label={signUpText('or')} labelPosition="center" my="md" />
@@ -58,4 +60,4 @@ function NewSignUpModal({ handleClose, isOpen }) {
   );
 }
 
-export default NewSignUpModal;
+export default NewSignInModal;
