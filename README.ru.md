@@ -1,14 +1,10 @@
 # Runit
 
-[![On Push](https://github.com/hexlet-rus/runit/actions/workflows/push.yml/badge.svg?event=push)](https://github.com/hexlet-rus/runit/actions/workflows/push.yml)
+[![On Push](https://github.com/hexlet-volunteers/runit/actions/workflows/push.yml/badge.svg?event=push)](https://github.com/hexlet-volunteers/runit/actions/workflows/push.yml)
 
 ## Описание
 
-Runit — это среда для написания и выполнения кода, которая будет активно использоваться на всех платформах © ООО “Хекслет Рус”. Ближайший аналог — сервис repl.it. Бэкенд разработан на Fastify и TypeScript с использованием tRPC, фронтенд использует React.
-
-Задачи:
-
-* Участие в развитии проекта
+Runit — это среда для написания и выполнения кода, которая активно используется на платформах © ООО «Хекслет Рус». Ближайший аналог — сервис repl.it.
 
 Возможности (текущие и будущие):
 
@@ -19,13 +15,20 @@ Runit — это среда для написания и выполнения к
 
 Задачи можно обсудить в канале [Telegram](https://t.me/hexletcommunity/12).
 
+## Технологии
+
+* **Язык:** TypeScript
+* **Фронтенд:** React, Mantine, Redux Toolkit, Vite, HTML, SCSS
+* **Бэкенд:** NestJS, Node.js
+* **Шаблонизатор:** Pug
+
 ## Системные требования
 
 * node >= 24
 * npm >= 9
 * PostgreSQL для продакшена, либо SQLite для локальной разработки
 
-## Установка зависимостей для бекенда и его запуск
+## Установка зависимостей для бэкенда и его запуск
 
 ```bash
 npm install
@@ -50,7 +53,7 @@ npm run start
 
 ## Как помочь проекту
 
-Посмотрите список issue, выберите интересную задачу, напишите в issue, что хотите работать над этой задачей.
+Посмотрите список [issue](https://github.com/hexlet-volunteers/runit/issues), выберите интересную задачу и напишите в issue, что хотите работать над ней.
 
 ## Полезные ссылки
 
@@ -61,6 +64,6 @@ npm run start
 
 [![© ООО «Хекслет Рус» logo](https://raw.githubusercontent.com/Hexlet/assets/master/images/hexlet_logo128.png)](https://hexlet.io/?utm_source=github&utm_medium=link&utm_campaign=hexlet-editor)
 
-Этот репозиторий создается и поддерживается командой и сообществом © ООО «Хекслет Рус», образовательный проект. [Подробнее о © ООО «Хекслет Рус»](https://hexlet.io/?utm_source=github&utm_medium=link&utm_campaign=hexlet-editor).
+Этот репозиторий создаётся и поддерживается командой и сообществом © ООО «Хекслет Рус», образовательный проект. [Подробнее о Хекслете](https://hexlet.io/?utm_source=github&utm_medium=link&utm_campaign=hexlet-editor).
 
 См. самых активных участников на [hexlet-friends](https://friends.hexlet.io/).

@@ -1,14 +1,10 @@
 # Runit
 
-[![On Push](https://github.com/hexlet-rus/runit/actions/workflows/push.yml/badge.svg?event=push)](https://github.com/hexlet-rus/runit/actions/workflows/push.yml)
+[![On Push](https://github.com/hexlet-volunteers/runit/actions/workflows/push.yml/badge.svg?event=push)](https://github.com/hexlet-volunteers/runit/actions/workflows/push.yml)
 
 ## About
 
-Runit is an environment for writing and executing code that will be actively used on all Hexlet Rus Ltd platforms. The closest counterpart is the repl.it service. The backend is developed in Fastify and TypeScript with tRPC, the frontend uses React.
-
-Tasks:
-
-* Participation in service development
+Runit is an environment for writing and executing code that is actively used across the Hexlet platforms. The closest counterpart is the repl.it service.
 
 Features (current and future):
 
@@ -18,6 +14,13 @@ Features (current and future):
 * Collaborative editing
 
 Tasks can be discussed in [Telegram](https://t.me/hexletcommunity/12).
+
+## Technologies
+
+* **Language:** TypeScript
+* **Frontend:** React, Mantine, Redux Toolkit, Vite, HTML, SCSS
+* **Backend:** NestJS, Node.js
+* **Templating:** Pug
 
 ## System requirements
 
@@ -32,6 +35,8 @@ npm install
 npm run dev
 ```
 
+<http://localhost:3001>
+
 ## Install dependencies for frontend and run
 
 ```bash
@@ -44,11 +49,16 @@ npm run start
 
 ## Old API Documentation
 
-Structure of old project's APIs is [here](https://runit.hexlet.ru/api).
+Structure of the old project's API is [here](https://runit.hexlet.ru/api).
 
 ## How you can help the project
 
-Look at the list of [issues](https://github.com/hexlet-rus/runit/issues?page=1), choose an interesting task, write to the issue to say you would like to work on the task.
+Look at the list of [issues](https://github.com/hexlet-volunteers/runit/issues), choose an interesting task, and comment on the issue to say you would like to work on it.
+
+## Useful links
+
+* [TS guidelines from Microsoft](https://github.com/microsoft/TypeScript/wiki/Coding-guidelines)
+* [TS guidelines from Google](https://google.github.io/styleguide/tsguide.html)
 
 ---
 
@@ -56,5 +66,4 @@ Look at the list of [issues](https://github.com/hexlet-rus/runit/issues?page=1),
 
 This repository is created and maintained by the team and the community of Hexlet Rus Ltd, an educational project. [Read more about Hexlet](https://hexlet.io/?utm_source=github&utm_medium=link&utm_campaign=hexlet-editor).
 
-See most active contributors on [hexlet-friends](https://friends.hexlet.io/).
-...
+See the most active contributors on [hexlet-friends](https://friends.hexlet.io/).
