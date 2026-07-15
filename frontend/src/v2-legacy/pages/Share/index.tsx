@@ -51,7 +51,8 @@ export function fileNameOf(snippet: Pick<Snippet, 'name' | 'language'>): string 
 }
 
 // Относительная дата по-русски (упрощённо, без библиотек).
-export function relativeDate(iso: string): string {
+export function relativeDate(iso: string | null | undefined): string {
+  if (!iso) return '';
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
   const days = Math.floor((Date.now() - then) / (24 * 60 * 60 * 1000));
