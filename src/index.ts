@@ -4,6 +4,7 @@ import {
 } from '@trpc/server/adapters/fastify';
 import { fastify } from 'fastify';
 
+import { env } from './config/env';
 import { runMigrations } from './db/connection';
 import { seedHomePageData } from './db/seedHomePageData';
 import { registerHealthRoute } from './health';
@@ -29,7 +30,7 @@ const getApp = async () => {
 
   const server = fastify({
     logger: {
-      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+      level: env.NODE_ENV === 'production' ? 'info' : 'debug',
     },
     routerOptions: {
       maxParamLength: 1000,
