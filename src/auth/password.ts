@@ -1,10 +1,45 @@
 import bcrypt from 'bcrypt';
+import { z } from 'zod/v4';
 import { commonPasswords } from './common-passwords';
 
 const BCRYPT_COST_FACTOR = 12;
 const MIN_PASSWORD_LENGTH = 8;
 const MIN_CHARACTER_CATEGORIES = 3;
-const PASSWORD_HISTORY_LIMIT = 5;
+export const PASSWORD_HISTORY_LIMIT = 5;
+
+function countCharacterCategories(password: string): number {
+  return [
+    /[a-z]/.test(password),
+    /[A-Z]/.test(password),
+    /[0-9]/.test(password),
+    /[^a-zA-Z0-9]/.test(password),
+  ].filter(Boolean).length;
+}
+
+export const buildPasswordPolicySchema = (
+  minLength: number = MIN_PASSWORD_LENGTH,
+) =>
+  z
+    .string()
+    .min(minLength, `Password must be at least ${minLength} characters long`)
+    .superRefine((password, ctx) => {
+      if (countCharacterCategories(password) < MIN_CHARACTER_CATEGORIES) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'Password must contain at least 3 of the following: lowercase letters, uppercase letters, digits, special characters',
+        });
+      }
+
+      if (commonPasswords.has(password.toLowerCase())) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Password is too common, please choose a different one',
+        });
+      }
+    });
+
+export const passwordPolicySchema = buildPasswordPolicySchema();
 
 export interface PasswordValidationResult {
   ok: boolean;
@@ -13,33 +48,22 @@ export interface PasswordValidationResult {
 
 export function validatePasswordPolicy(
   password: string,
+  minLength: number = MIN_PASSWORD_LENGTH,
 ): PasswordValidationResult {
-  const errors: string[] = [];
+  const schema =
+    minLength === MIN_PASSWORD_LENGTH
+      ? passwordPolicySchema
+      : buildPasswordPolicySchema(minLength);
+  const result = schema.safeParse(password);
 
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    errors.push(
-      `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`,
-    );
+  if (result.success) {
+    return { ok: true, errors: [] };
   }
 
-  const categories = [
-    /[a-z]/.test(password),
-    /[A-Z]/.test(password),
-    /[0-9]/.test(password),
-    /[^a-zA-Z0-9]/.test(password),
-  ].filter(Boolean).length;
-
-  if (categories < MIN_CHARACTER_CATEGORIES) {
-    errors.push(
-      'Password must contain at least 3 of the following: lowercase letters, uppercase letters, digits, special characters',
-    );
-  }
-
-  if (commonPasswords.has(password.toLowerCase())) {
-    errors.push('Password is too common, please choose a different one');
-  }
-
-  return { ok: errors.length === 0, errors };
+  return {
+    ok: false,
+    errors: result.error.issues.map((issue) => issue.message),
+  };
 }
 
 export async function hashPassword(plain: string): Promise<string> {
@@ -65,5 +89,3 @@ export async function isPasswordReused(
 
   return checks.some(Boolean);
 }
-
-export { PASSWORD_HISTORY_LIMIT };
