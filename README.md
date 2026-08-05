@@ -29,6 +29,7 @@ Runit — это среда для написания и выполнения к
 
 ```bash
 npm install
+cp .env.example .env
 npm run dev
 ```
 
