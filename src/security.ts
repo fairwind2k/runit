@@ -1,6 +1,8 @@
+import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { env } from './config/env';
 
 /**
  * Заголовки безопасности (#856) и ограничение частоты запросов (#858).
@@ -48,7 +50,26 @@ const isAuth = (url: string): boolean =>
   url.startsWith('/trpc/users.createUser') ||
   url.startsWith('/trpc/users.getUserByEmail');
 
+/**
+ * login/register/refresh не проверяются на CSRF: на этот момент у клиента ещё
+ * нет сессии, которую можно было бы угнать этой атакой (см. CORS_ORIGIN и
+ * access/refresh cookie в auth/plugins.ts). Токен, который они выдают,
+ * защищает все последующие мутации.
+ */
+const isCsrfExempt = (url: string): boolean =>
+  url.startsWith('/trpc/auth.login') ||
+  url.startsWith('/trpc/auth.register') ||
+  url.startsWith('/trpc/auth.refresh');
+
 export async function registerSecurity(server: FastifyInstance): Promise<void> {
+  await server.register(cors, {
+    // Cookie с JWT (см. auth/plugins.ts) должны доходить до бэкенда, а браузер
+    // отправляет их в кросс-сайтовых запросах только при credentials: true —
+    // и только если Access-Control-Allow-Origin — конкретный origin, не '*'.
+    origin: env.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
+    credentials: true,
+  });
+
   await server.register(helmet, {
     // Fastify отдаёт API и служебный HTML (/s/:code/meta). Страницы приложения и
     // embed-виджет раздаёт Caddy — их заголовки заданы в frontend/Caddyfile.docker,
@@ -75,6 +96,17 @@ export async function registerSecurity(server: FastifyInstance): Promise<void> {
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     // Виджет живёт в iframe на чужом домене, а COEP ломает такие вложения.
     crossOriginEmbedderPolicy: false,
+  });
+
+  // Проверяем CSRF-токен только на мутациях (tRPC различает их HTTP-методом:
+  // query — GET, mutation — POST) и только там, где уже есть сессия.
+  server.addHook('preHandler', (request, reply, done) => {
+    if (request.method !== 'POST' || isCsrfExempt(request.url)) {
+      done();
+      return;
+    }
+
+    server.csrfProtection(request, reply, done);
   });
 
   await server.register(rateLimit, {

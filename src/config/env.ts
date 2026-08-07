@@ -14,6 +14,8 @@ const envSchema = z.object({
   DB_PATH: z.string().default('database.sqlite'),
   JWT_ACCESS_SECRET: secret(),
   JWT_REFRESH_SECRET: secret(),
+  // Через запятую для нескольких фронтенд-origin (например, dev + staging).
+  CORS_ORIGIN: z.string().default('http://localhost:3000'),
 });
 
 export type Env = z.infer<typeof envSchema>;
