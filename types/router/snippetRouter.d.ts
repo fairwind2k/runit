@@ -1,5 +1,5 @@
 export declare const snippetRouter: import("@trpc/server").TRPCBuiltRouter<{
-    ctx: object;
+    ctx: import("../context").Context;
     meta: object;
     errorShape: import("@trpc/server").TRPCDefaultErrorShape;
     transformer: false;
@@ -8,13 +8,13 @@ export declare const snippetRouter: import("@trpc/server").TRPCBuiltRouter<{
         input: unknown;
         output: {
             id: number;
+            code: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: number | null;
             language: string | null;
             slug: string | null;
-            code: string;
             shortCode: string | null;
             visibility: string;
         };
@@ -27,13 +27,13 @@ export declare const snippetRouter: import("@trpc/server").TRPCBuiltRouter<{
         };
         output: {
             id: number;
+            code: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: number | null;
             language: string | null;
             slug: string | null;
-            code: string;
             shortCode: string | null;
             visibility: string;
         };
@@ -43,13 +43,13 @@ export declare const snippetRouter: import("@trpc/server").TRPCBuiltRouter<{
         input: void;
         output: {
             id: number;
+            code: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: number | null;
             language: string | null;
             slug: string | null;
-            code: string;
             shortCode: string | null;
             visibility: string;
         }[];
@@ -66,13 +66,13 @@ export declare const snippetRouter: import("@trpc/server").TRPCBuiltRouter<{
         };
         output: {
             id: number;
+            code: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: number | null;
             language: string | null;
             slug: string | null;
-            code: string;
             shortCode: string | null;
             visibility: string;
         }[];
@@ -89,13 +89,13 @@ export declare const snippetRouter: import("@trpc/server").TRPCBuiltRouter<{
         };
         output: {
             id: number;
+            code: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: number | null;
             language: string | null;
             slug: string | null;
-            code: string;
             shortCode: string | null;
             visibility: string;
         };
@@ -113,13 +113,13 @@ export declare const snippetRouter: import("@trpc/server").TRPCBuiltRouter<{
         };
         output: {
             id: number;
+            code: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: number | null;
             language: string | null;
             slug: string | null;
-            code: string;
             shortCode: string | null;
             visibility: string;
         };
@@ -140,13 +140,13 @@ export declare const snippetRouter: import("@trpc/server").TRPCBuiltRouter<{
         input: string;
         output: {
             id: number;
+            code: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: number | null;
             language: string | null;
             slug: string | null;
-            code: string;
             shortCode: string | null;
             visibility: string;
         } & {
@@ -166,13 +166,13 @@ export declare const snippetRouter: import("@trpc/server").TRPCBuiltRouter<{
         };
         output: {
             id: number;
+            code: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: number | null;
             language: string | null;
             slug: string | null;
-            code: string;
             shortCode: string | null;
             visibility: string;
         };

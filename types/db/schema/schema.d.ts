@@ -55,7 +55,7 @@ export declare const users: import("drizzle-orm/sqlite-core").SQLiteTableWithCol
             identity: undefined;
             generated: undefined;
         }, {}, {
-            length: 60;
+            length: 254;
         }>;
         password: import("drizzle-orm/sqlite-core").SQLiteColumn<{
             name: "password";
@@ -470,6 +470,194 @@ export declare const snippets: import("drizzle-orm/sqlite-core").SQLiteTableWith
     };
     dialect: "sqlite";
 }>;
+export declare const refreshTokens: import("drizzle-orm/sqlite-core").SQLiteTableWithColumns<{
+    name: "refresh_tokens";
+    schema: undefined;
+    columns: {
+        id: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "id";
+            tableName: "refresh_tokens";
+            dataType: "number";
+            columnType: "SQLiteInteger";
+            data: number;
+            driverParam: number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: true;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        userId: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "user_id";
+            tableName: "refresh_tokens";
+            dataType: "number";
+            columnType: "SQLiteInteger";
+            data: number;
+            driverParam: number;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        tokenHash: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "token_hash";
+            tableName: "refresh_tokens";
+            dataType: "string";
+            columnType: "SQLiteText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {
+            length: number | undefined;
+        }>;
+        expiresAt: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "expires_at";
+            tableName: "refresh_tokens";
+            dataType: "date";
+            columnType: "SQLiteTimestamp";
+            data: Date;
+            driverParam: number;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        revokedAt: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "revoked_at";
+            tableName: "refresh_tokens";
+            dataType: "date";
+            columnType: "SQLiteTimestamp";
+            data: Date;
+            driverParam: number;
+            notNull: false;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        createdAt: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "created_at";
+            tableName: "refresh_tokens";
+            dataType: "date";
+            columnType: "SQLiteTimestamp";
+            data: Date;
+            driverParam: number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+    };
+    dialect: "sqlite";
+}>;
+export declare const passwordHistory: import("drizzle-orm/sqlite-core").SQLiteTableWithColumns<{
+    name: "password_history";
+    schema: undefined;
+    columns: {
+        id: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "id";
+            tableName: "password_history";
+            dataType: "number";
+            columnType: "SQLiteInteger";
+            data: number;
+            driverParam: number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: true;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        userId: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "user_id";
+            tableName: "password_history";
+            dataType: "number";
+            columnType: "SQLiteInteger";
+            data: number;
+            driverParam: number;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        passwordHash: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "password_hash";
+            tableName: "password_history";
+            dataType: "string";
+            columnType: "SQLiteText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {
+            length: number | undefined;
+        }>;
+        createdAt: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "created_at";
+            tableName: "password_history";
+            dataType: "date";
+            columnType: "SQLiteTimestamp";
+            data: Date;
+            driverParam: number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+    };
+    dialect: "sqlite";
+}>;
 export declare const sections: import("drizzle-orm/sqlite-core").SQLiteTableWithColumns<{
     name: "sections";
     schema: undefined;
@@ -607,6 +795,8 @@ export declare const sections: import("drizzle-orm/sqlite-core").SQLiteTableWith
 export declare const usersRelations: import("drizzle-orm").Relations<"users", {
     snippets: import("drizzle-orm").Many<"snippets">;
     settings: import("drizzle-orm").One<"user_settings", true>;
+    refreshTokens: import("drizzle-orm").Many<"refresh_tokens">;
+    passwordHistory: import("drizzle-orm").Many<"password_history">;
 }>;
 export declare const snippetsRelations: import("drizzle-orm").Relations<"snippets", {
     user: import("drizzle-orm").One<"users", false>;
@@ -614,8 +804,18 @@ export declare const snippetsRelations: import("drizzle-orm").Relations<"snippet
 export declare const userSettingsRelations: import("drizzle-orm").Relations<"user_settings", {
     user: import("drizzle-orm").One<"users", true>;
 }>;
+export declare const refreshTokensRelations: import("drizzle-orm").Relations<"refresh_tokens", {
+    user: import("drizzle-orm").One<"users", true>;
+}>;
+export declare const passwordHistoryRelations: import("drizzle-orm").Relations<"password_history", {
+    user: import("drizzle-orm").One<"users", true>;
+}>;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type RefreshToken = typeof refreshTokens.$inferSelect;
+export type NewRefreshToken = typeof refreshTokens.$inferInsert;
+export type PasswordHistoryEntry = typeof passwordHistory.$inferSelect;
+export type NewPasswordHistoryEntry = typeof passwordHistory.$inferInsert;
 export type Snippet = typeof snippets.$inferSelect;
 export type NewSnippet = typeof snippets.$inferInsert;
 export type UserSettings = typeof userSettings.$inferSelect;

@@ -1,63 +1,27 @@
 export declare const userRouter: import("@trpc/server").TRPCBuiltRouter<{
-    ctx: object;
+    ctx: import("../context").Context;
     meta: object;
     errorShape: import("@trpc/server").TRPCDefaultErrorShape;
     transformer: false;
 }, import("@trpc/server").TRPCDecorateCreateRouterOptions<{
     getUserById: import("@trpc/server").TRPCQueryProcedure<{
         input: number;
-        output: {
-            id: number;
-            username: string;
-            email: string;
-            password: string;
-            isAdmin: boolean;
-            recoverHash: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
+        output: import("../db/users").SafeUser;
         meta: object;
     }>;
     getUserByEmail: import("@trpc/server").TRPCQueryProcedure<{
         input: string;
-        output: {
-            id: number;
-            username: string;
-            email: string;
-            password: string;
-            isAdmin: boolean;
-            recoverHash: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
+        output: import("../db/users").SafeUser;
         meta: object;
     }>;
     getUserByUsername: import("@trpc/server").TRPCQueryProcedure<{
         input: string;
-        output: {
-            id: number;
-            username: string;
-            email: string;
-            password: string;
-            isAdmin: boolean;
-            recoverHash: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
+        output: import("../db/users").SafeUser;
         meta: object;
     }>;
     getAllUsers: import("@trpc/server").TRPCQueryProcedure<{
         input: void;
-        output: {
-            id: number;
-            username: string;
-            email: string;
-            password: string;
-            isAdmin: boolean;
-            recoverHash: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
+        output: import("../db/users").SafeUser[];
         meta: object;
     }>;
     createUser: import("@trpc/server").TRPCMutationProcedure<{
@@ -68,16 +32,7 @@ export declare const userRouter: import("@trpc/server").TRPCBuiltRouter<{
             isAdmin?: boolean | undefined;
             recoverHash?: string | undefined;
         };
-        output: {
-            id: number;
-            username: string;
-            email: string;
-            password: string;
-            isAdmin: boolean;
-            recoverHash: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
+        output: import("../db/users").SafeUser;
         meta: object;
     }>;
     updateUser: import("@trpc/server").TRPCMutationProcedure<{
@@ -88,16 +43,15 @@ export declare const userRouter: import("@trpc/server").TRPCBuiltRouter<{
             password?: string | undefined;
             recoverHash?: string | undefined;
         };
-        output: {
+        output: import("../db/users").SafeUser | null;
+        meta: object;
+    }>;
+    setUserRole: import("@trpc/server").TRPCMutationProcedure<{
+        input: {
             id: number;
-            username: string;
-            email: string;
-            password: string;
             isAdmin: boolean;
-            recoverHash: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
+        };
+        output: import("../db/users").SafeUser;
         meta: object;
     }>;
     deleteUser: import("@trpc/server").TRPCMutationProcedure<{
@@ -146,24 +100,24 @@ export declare const userRouter: import("@trpc/server").TRPCBuiltRouter<{
     getData: import("@trpc/server").TRPCQueryProcedure<{
         input: number;
         output: {
-            currentUser: import("../db/schema/schema").User & {
+            currentUser: import("../db/users").SafeUser & {
                 language: string;
                 theme: string;
                 avatarBase64: string | null;
             };
             snippets: ({
                 id: number;
+                code: string;
                 name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: number | null;
                 language: string | null;
                 slug: string | null;
-                code: string;
                 shortCode: string | null;
                 visibility: string;
             } & {
-                user: import("../db/schema/schema").User;
+                user: import("../db/users").SafeUser;
             })[];
         };
         meta: object;
