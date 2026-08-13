@@ -3,13 +3,13 @@ import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { env } from '../config/env';
 import * as schema from './schema/schema';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = process.env.DB_PATH || 'database.sqlite';
-const sqlite = new Database(dbPath);
+const sqlite = new Database(env.DB_PATH);
 
 // Включение WAL режима для лучшей производительности
 // sqlite.pragma('journal_mode = WAL');

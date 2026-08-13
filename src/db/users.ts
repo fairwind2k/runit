@@ -1,11 +1,11 @@
 import { desc, eq } from 'drizzle-orm';
 import { z } from 'zod/v4';
+import { emailSchema } from '../auth/email';
 import { db } from './connection';
 import {
   type NewUser,
   type NewUserSettings,
   snippets,
-  type User,
   type UserSettings,
   userSettings,
   users,
@@ -16,10 +16,33 @@ import {
 // 2) recover  - подключить sentry
 // 3) checkHash
 
+/**
+ * Столбцы, безопасные для возврата клиенту — никогда не включают password
+ * и recoverHash. Использовать во всех select/.returning(), результат которых
+ * может попасть в tRPC-ответ.
+ */
+const safeUserColumns = {
+  id: users.id,
+  username: users.username,
+  email: users.email,
+  isAdmin: users.isAdmin,
+  createdAt: users.createdAt,
+  updatedAt: users.updatedAt,
+} as const;
+
+export type SafeUser = {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export const userSchema = z.object({
   id: z.number(),
   username: z.string().min(3).max(20),
-  email: z.string().email().max(60),
+  email: emailSchema,
   password: z.string().min(6).max(60),
   isAdmin: z.boolean().default(false),
   recoverHash: z.string().max(50).nullable(),
@@ -29,19 +52,27 @@ export const userSchema = z.object({
 
 export const createUserSchema = z.object({
   username: z.string().min(3).max(20),
-  email: z.string().email().max(60),
-  password: z.string().min(6).max(60),
+  email: emailSchema,
+  password: z.string().min(8).max(60),
   isAdmin: z.boolean().default(false).optional(),
   recoverHash: z.string().max(50).optional(),
 });
 
+/**
+ * Обновление профиля. Ни password, ни recoverHash здесь нет намеренно:
+ *  - пароль меняется только через auth.changePassword — там проверяется текущий
+ *    пароль, политика и повторное использование, и результат хешируется. Пока
+ *    поле было в этой схеме, любое обновление профиля могло записать пароль
+ *    в открытом виде (#791);
+ *  - recoverHash — внутреннее поле восстановления доступа, клиент не должен
+ *    иметь возможности задать его сам (иначе выпишет себе токен сброса).
+ *
+ * isAdmin тоже исключён — роль меняется только через admin-only setUserRole.
+ */
 export const updateUserSchema = z.object({
   id: z.number(),
   username: z.string().min(3).max(20).optional(),
-  email: z.string().email().max(60).optional(),
-  password: z.string().min(6).max(60).optional(),
-  recoverHash: z.string().max(50).optional(),
-  // isAdmin is intentionally excluded — role changes require a separate admin-only procedure (add when auth is implemented)
+  email: emailSchema.optional(),
 });
 
 export const userSettingsSchema = z.object({
@@ -72,18 +103,23 @@ export const deleteUserSchema = z.object({
   id: z.coerce.number().positive(),
 });
 
+export const setUserRoleSchema = z.object({
+  id: z.number(),
+  isAdmin: z.boolean(),
+});
+
 export const getUserByIdSchema = z.number();
-export const getUserByEmailSchema = z.string().email().max(60);
+export const getUserByEmailSchema = emailSchema;
 export const getUserByUsernameSchema = z.string().min(3).max(20);
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type UpdateUserSettingsInput = z.infer<typeof updateUserSettingsSchema>;
 
-export async function getUserById(id: number): Promise<User | undefined> {
+export async function getUserById(id: number): Promise<SafeUser | undefined> {
   try {
     const [user] = await db
-      .select()
+      .select(safeUserColumns)
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
@@ -95,10 +131,12 @@ export async function getUserById(id: number): Promise<User | undefined> {
   }
 }
 
-export async function getUserByEmail(email: string): Promise<User | undefined> {
+export async function getUserByEmail(
+  email: string,
+): Promise<SafeUser | undefined> {
   try {
     const [user] = await db
-      .select()
+      .select(safeUserColumns)
       .from(users)
       .where(eq(users.email, email))
       .limit(1);
@@ -112,10 +150,10 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
 
 export async function getUserByUsername(
   username: string,
-): Promise<User | undefined> {
+): Promise<SafeUser | undefined> {
   try {
     const [user] = await db
-      .select()
+      .select(safeUserColumns)
       .from(users)
       .where(eq(users.username, username))
       .limit(1);
@@ -128,10 +166,10 @@ export async function getUserByUsername(
 }
 
 // выяснить, для чего нужен этот маршрут
-export async function getAllUsers(): Promise<User[]> {
+export async function getAllUsers(): Promise<SafeUser[]> {
   try {
     const allUsers = await db
-      .select()
+      .select(safeUserColumns)
       .from(users)
       .orderBy(desc(users.createdAt));
 
@@ -142,7 +180,7 @@ export async function getAllUsers(): Promise<User[]> {
   }
 }
 
-export async function createUser(userData: CreateUserInput): Promise<User> {
+export async function createUser(userData: CreateUserInput): Promise<SafeUser> {
   try {
     const newUser: NewUser = {
       username: userData.username,
@@ -151,7 +189,10 @@ export async function createUser(userData: CreateUserInput): Promise<User> {
       recoverHash: userData.recoverHash || null,
     };
 
-    const result = await db.insert(users).values(newUser).returning();
+    const result = await db
+      .insert(users)
+      .values(newUser)
+      .returning(safeUserColumns);
 
     if (!result[0]) {
       throw new Error('Failed to create user');
@@ -175,17 +216,18 @@ export async function createUser(userData: CreateUserInput): Promise<User> {
 export async function updateUser(
   id: number,
   updates: Omit<UpdateUserInput, 'id'>, // ← используем UpdateUserInput и исключаем id
-): Promise<User | null> {
+): Promise<SafeUser | null> {
   try {
     const updateData: Partial<NewUser> = {
       ...updates,
+      updatedAt: new Date(),
     };
 
     const result = await db
       .update(users)
       .set(updateData)
       .where(eq(users.id, id))
-      .returning();
+      .returning(safeUserColumns);
 
     if (result.length === 0) {
       return null;
@@ -203,6 +245,45 @@ export async function updateUser(
       }
     }
     throw new Error('Failed to update user');
+  }
+}
+
+/**
+ * Записывает уже готовый bcrypt-хеш. Отделено от updateUser сознательно:
+ * там принимаются данные прямо из ввода клиента, здесь — значение, которое
+ * обязано быть посчитано hashPassword(). Единственный вызывающий —
+ * auth.changePassword.
+ */
+export async function updateUserPasswordHash(
+  id: number,
+  passwordHash: string,
+): Promise<void> {
+  try {
+    await db
+      .update(users)
+      .set({ password: passwordHash, updatedAt: new Date() })
+      .where(eq(users.id, id));
+  } catch (error) {
+    console.error('Error updating password:', error);
+    throw new Error('Failed to update password');
+  }
+}
+
+export async function setUserRole(
+  id: number,
+  isAdmin: boolean,
+): Promise<SafeUser | null> {
+  try {
+    const result = await db
+      .update(users)
+      .set({ isAdmin })
+      .where(eq(users.id, id))
+      .returning(safeUserColumns);
+
+    return result[0] ?? null;
+  } catch (error) {
+    console.error('Error setting user role:', error);
+    throw new Error('Failed to set user role');
   }
 }
 
@@ -299,12 +380,12 @@ export async function updateUserSettings(
 
 // получение данных пользователя - настройки и сниппеты
 export async function getData({ id }: { id: number }): Promise<{
-  currentUser: User & {
+  currentUser: SafeUser & {
     language: string;
     theme: string;
     avatarBase64: string | null;
   };
-  snippets: (typeof snippets.$inferSelect & { user: User })[];
+  snippets: (typeof snippets.$inferSelect & { user: SafeUser })[];
 }> {
   try {
     const currentUser = await getUserById(id);
@@ -317,7 +398,7 @@ export async function getData({ id }: { id: number }): Promise<{
     const userSnippets = await db
       .select({
         snippet: snippets,
-        user: users,
+        user: safeUserColumns,
       })
       .from(snippets)
       .innerJoin(users, eq(snippets.userId, users.id))

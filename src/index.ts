@@ -4,6 +4,9 @@ import {
 } from '@trpc/server/adapters/fastify';
 import { fastify } from 'fastify';
 
+import { registerAuthPlugins } from './auth/plugins';
+import { env } from './config/env';
+import { createContext } from './context';
 import { runMigrations } from './db/connection';
 import { seedHomePageData } from './db/seedHomePageData';
 import { registerHealthRoute } from './health';
@@ -13,8 +16,6 @@ import { type AppRouter, appRouter } from './router/index';
 import { runnerConfig } from './runner/config';
 import { sweepOrphans } from './runner/run';
 import { registerSecurity } from './security';
-
-// import { createContext } from './context';
 
 const getApp = async () => {
   try {
@@ -29,7 +30,7 @@ const getApp = async () => {
 
   const server = fastify({
     logger: {
-      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+      level: env.LOG_LEVEL,
     },
     routerOptions: {
       maxParamLength: 1000,
@@ -58,6 +59,9 @@ const getApp = async () => {
   // Обработчик ошибок — раньше роутов, чтобы ловить сбои во всех из них.
   registerMonitoring(server);
 
+  // cookie/JWT — до tRPC-контекста, которому они нужны для чтения пользователя.
+  await registerAuthPlugins(server);
+
   // Заголовки безопасности и лимиты — до объявления роутов.
   await registerSecurity(server);
 
@@ -81,7 +85,7 @@ const getApp = async () => {
       prefix: '/trpc',
       trpcOptions: {
         router: appRouter,
-        // createContext,
+        createContext,
         onError({ path, error, req }) {
           reportError(error, { where: `trpc:${path}`, requestId: req.id });
         },
