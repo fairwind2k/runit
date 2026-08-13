@@ -2,7 +2,9 @@ import { useState } from 'react';
 import {
   Alert,
   Anchor,
+  Box,
   Button,
+  Checkbox,
   PasswordInput,
   Stack,
   Text,
@@ -11,7 +13,14 @@ import {
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { Link } from 'react-router';
-import { useAuthModal, validateEmail, validatePassword, validateUsername, titles } from '..';
+import {
+  PasswordRequirements,
+  titles,
+  useAuthModal,
+  validateEmail,
+  validatePassword,
+  validateUsername,
+} from '..';
 import { useSession } from '../../../entities/user';
 import FormHeader from './FormHeader';
 
@@ -23,11 +32,18 @@ export default function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm({
-    initialValues: { username: '', email: '', password: '' },
+    initialValues: { username: '', email: '', password: '', consent: false },
     validate: {
       username: validateUsername,
       email: validateEmail,
       password: validatePassword,
+      /**
+       * Согласие — обязательная отметка, а не пассивная строчка «регистрируясь,
+       * вы принимаете». Согласие должно быть конкретным, информированным и
+       * однозначным (152-ФЗ, ст. 9 ч. 1), то есть выраженным действием.
+       */
+      consent: (value: boolean) =>
+        value ? null : 'Без согласия на обработку персональных данных регистрация невозможна',
     },
   });
 
@@ -77,11 +93,38 @@ export default function RegisterForm() {
           autoComplete="email"
           {...form.getInputProps('email')}
         />
-        <PasswordInput
-          label="Пароль"
-          placeholder="Минимум 8 символов"
-          autoComplete="new-password"
-          {...form.getInputProps('password')}
+        <Box>
+          <PasswordInput
+            label="Пароль"
+            placeholder="Придумайте пароль"
+            autoComplete="new-password"
+            {...form.getInputProps('password')}
+          />
+          {/* Требования видны сразу и отмечаются по ходу ввода, а не только
+              в ошибке после отправки (#621). */}
+          <PasswordRequirements value={form.values.password} />
+        </Box>
+        {/*
+          Отдельная отметка именно на согласие: закон требует, чтобы согласие
+          было оформлено отдельно от иных документов, которые подписывает
+          субъект (152-ФЗ, ст. 9 ч. 1). Поэтому здесь не «принимаю условия и
+          согласие» одной галочкой, а согласие само по себе — со ссылками на
+          текст согласия и на Политику.
+        */}
+        <Checkbox
+          {...form.getInputProps('consent', { type: 'checkbox' })}
+          label={
+            <Text size="sm">
+              Даю{' '}
+              <Anchor component={Link} to="/legal?tab=consent" size="sm" onClick={close}>
+                согласие на обработку персональных данных
+              </Anchor>{' '}
+              и ознакомлен с{' '}
+              <Anchor component={Link} to="/legal?tab=privacy" size="sm" onClick={close}>
+                Политикой обработки персональных данных
+              </Anchor>
+            </Text>
+          }
         />
         <Button type="submit" size="md" radius="md" fullWidth loading={loading}>
           Создать аккаунт
