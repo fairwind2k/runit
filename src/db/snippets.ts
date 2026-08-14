@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod/v4';
 import { generateUniqSlug } from '../utils/generate-uniq-slug';
 import { db } from './connection';
@@ -10,30 +10,6 @@ import {
   users,
 } from './schema/schema';
 
-export const snippetSchema = z.object({
-  id: z.number(),
-  name: z.string().min(1).max(30),
-  slug: z.string().max(30).nullable(),
-  code: z.string().min(1),
-  language: z.enum([
-    'javascript',
-    'typescript',
-    'python',
-    'php',
-    'ruby',
-    'java',
-    'go',
-    'cpp',
-    'sql',
-    'bash',
-    'html',
-    'css',
-  ]),
-  userId: z.number(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-});
-
 /** Уровни доступа к сниппету. */
 export const VISIBILITIES = ['private', 'link', 'public'] as const;
 export const visibilitySchema = z.enum(VISIBILITIES);
@@ -42,13 +18,21 @@ export type Visibility = (typeof VISIBILITIES)[number];
 export const getSnippetByShortCodeSchema = z.string().min(4).max(16);
 
 export const setVisibilitySchema = z.object({
-  id: z.number(),
+  id: z.number().int().positive(),
   visibility: visibilitySchema,
 });
 
+/**
+ * Ограничения на размер кода — первая линия защиты от переполнения БД и
+ * раздувания ответов. min(1) убран сознательно: пустой сниппет — нормальное
+ * состояние. Раньше выключенный тумблер «Начать с примера кода» отправлял
+ * code: '' и получал BAD_REQUEST, а очистка редактора ломала автосохранение.
+ */
+export const MAX_CODE_LENGTH = 100_000;
+
 export const createSnippetSchema = z.object({
   name: z.string().min(1).max(30),
-  code: z.string().min(1),
+  code: z.string().max(MAX_CODE_LENGTH),
   slug: z.string().max(30).optional(),
   language: z.enum([
     'javascript',
@@ -68,13 +52,22 @@ export const createSnippetSchema = z.object({
 });
 
 export const updateSnippetSchema = createSnippetSchema.partial().extend({
-  id: z.number(),
+  id: z.number().int().positive(),
 });
 
-export const getSnippetByIdSchema = z.coerce.number().positive();
+/**
+ * Идентификаторы — целые положительные. `int()` здесь не украшение: столбцы
+ * объявлены как serial, и дробное значение (id=1.5, пришедшее из адреса или
+ * подставленное вручную) доходило до запроса, где PostgreSQL отвергал его
+ * ошибкой типа — то есть клиент получал 500 «внутренняя ошибка» вместо
+ * понятного «некорректные данные».
+ */
+export const idSchema = z.coerce.number().int().positive();
+
+export const getSnippetByIdSchema = idSchema;
 
 export const deleteSnippetSchema = z.object({
-  id: z.coerce.number().positive(),
+  id: idSchema,
 });
 
 export const getSnippetByUsernameSlugSchema = z.object({
@@ -198,8 +191,15 @@ export async function getPublicSnippetsByUsername(
       .select({ snippet: snippets })
       .from(snippets)
       .innerJoin(users, eq(snippets.userId, users.id))
+      /**
+       * Только 'public'. Уровень 'link' означает «доступен тому, у кого есть
+       * ссылка» — такой сниппет не должен появляться в списке профиля: иначе
+       * достаточно открыть /u/username, чтобы получить и сам код, и ссылку,
+       * которой автор ни с кем не делился. Раньше здесь стояло
+       * ne(visibility, 'private'), то есть в профиль попадало и то, и другое.
+       */
       .where(
-        and(eq(users.username, username), ne(snippets.visibility, 'private')),
+        and(eq(users.username, username), eq(snippets.visibility, 'public')),
       )
       .orderBy(desc(snippets.createdAt));
 

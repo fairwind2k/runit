@@ -5,12 +5,20 @@ import { buildDockerArgs } from './dockerArgs';
 import { LANGUAGE_SPECS, specFor } from './languages';
 import type { RunLimits, RunnerLanguage } from './types';
 
+/**
+ * Полный набор лимитов. Раньше здесь не было maxFileBytes, и для языков без
+ * своего переопределения аргументы получались с `--ulimit fsize=undefined` —
+ * docker такой запуск отверг бы, а тест этого не замечал: проверялись другие
+ * флаги. Заодно это ловит проверка типов тестов (tsconfig.test.json), которая
+ * теперь идёт в CI.
+ */
 const limits: RunLimits = {
   timeoutMs: 10_000,
   memory: '256m',
   cpus: '1',
   pidsLimit: 64,
   maxOutputBytes: 65_536,
+  maxFileBytes: 8 * 1024 * 1024,
 };
 
 const argsFor = (language: RunnerLanguage) =>
@@ -76,6 +84,17 @@ test('код монтируется только для чтения', () => {
   assert.equal(mount, '/tmp/runit-runner-abc:/app:ro');
 });
 
+test('ulimit fsize задан числом для каждого языка', () => {
+  // Значение подставляется из лимитов, и пропуск поля давал бы строку
+  // «fsize=undefined»: docker отказался бы запускать контейнер.
+  for (const language of Object.keys(LANGUAGE_SPECS) as RunnerLanguage[]) {
+    const args = argsFor(language);
+    const idx = args.findIndex((a) => a.startsWith('fsize='));
+    assert.notEqual(idx, -1, `${language}: нет ulimit fsize`);
+    assert.match(args[idx], /^fsize=\d+$/, `${language}: ${args[idx]}`);
+  }
+});
+
 test('ulimit cpu страхует wall-clock таймаут', () => {
   const args = argsFor('python');
   const cpuLimit = args.filter((a) => a.startsWith('cpu='))[0];
@@ -111,10 +130,22 @@ test('команды и имена файлов по языкам', () => {
 });
 
 test('php: тег дописывается только при отсутствии и не сдвигает строки', () => {
-  const prepare = LANGUAGE_SPECS.php.prepare!;
+  const { prepare } = LANGUAGE_SPECS.php;
+  // Утверждение вместо `!`: если prepare когда-нибудь уберут из спеки, тест
+  // должен падать с внятной причиной, а не молча пропускать проверки.
+  assert.ok(prepare, 'у php должна быть подготовка кода');
   assert.equal(prepare("echo 'Hello';"), "<?php echo 'Hello';");
   assert.equal(prepare("<?php echo 'Hi';"), "<?php echo 'Hi';");
   assert.equal(prepare('<?= 1 ?>'), '<?= 1 ?>');
+  // Регистр тега PHP не важен — второй тег дописывать нельзя.
+  assert.equal(prepare("<?PHP echo 'Hi';"), "<?PHP echo 'Hi';");
+  // Смешанный код: тег есть, но не в начале файла.
+  assert.equal(
+    prepare('<h1>Заголовок</h1>\n<?php echo 1; ?>'),
+    '<h1>Заголовок</h1>\n<?php echo 1; ?>',
+  );
+  // Чистая разметка без PHP: php выведет её дословно, дописывать тег нельзя.
+  assert.equal(prepare('<p>просто html</p>'), '<p>просто html</p>');
   // нумерация строк сохранена: первая строка осталась первой
   assert.equal(prepare('echo 1;\necho 2;').split('\n').length, 2);
 });
@@ -167,11 +198,12 @@ test('новые языки: команды и файлы', () => {
     'node',
     '/app/main.ts',
   ]);
-  assert.deepEqual(specFor('go').command('/app/main.go'), [
-    'go',
-    'run',
-    '/app/main.go',
-  ]);
+  // Go разворачивает прогретый кэш из образа и только потом собирает: tmpfs
+  // пересоздаётся на каждый запуск, иначе stdlib компилируется заново каждый раз.
+  const goCmd = specFor('go').command('/app/main.go');
+  assert.deepEqual(goCmd.slice(0, 2), ['sh', '-c']);
+  assert.match(goCmd[2], /cp -r \/gocache \/tmp\/gocache/);
+  assert.match(goCmd[2], /exec go run \/app\/main\.go$/);
   assert.deepEqual(specFor('bash').command('/app/main.sh'), [
     'bash',
     '/app/main.sh',
@@ -248,7 +280,7 @@ test('/tmp: скриптовым языкам noexec, компилируемым
     assert.match(value, /nosuid/);
     assert.match(value, /nodev/);
   }
-  assert.match(tmpfsOf('go'), /size=320m/);
+  assert.match(tmpfsOf('go'), /size=384m/);
 });
 
 test('компилируемые языки пишут артефакты только в /tmp', () => {

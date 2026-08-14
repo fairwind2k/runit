@@ -30,7 +30,24 @@ export default function useSnippetFilter() {
    * запрашивался весь список и фильтровался по userId на клиенте — то есть
    * каждый пользователь получал в браузер чужие сниппеты, включая приватные.
    */
-  const { data: mySnippets = [], isLoading } = useQuery({
+  const {
+    data: mySnippets = [],
+    isLoading,
+    /**
+     * Неудачную загрузку нельзя показывать как пустой список: при недоступном
+     * сервере дашборд писал «У вас пока нет сниппетов» и предлагал создать
+     * первый — человек с сотней сниппетов видел, что всё пропало.
+     */
+    isError,
+    /**
+     * Браузер считает, что сети нет: react-query не отправляет запрос и ставит
+     * его на паузу (networkMode: 'online'). Ошибки при этом нет, данных тоже —
+     * и без отдельной проверки дашборд показывал «Создайте первый сниппет»
+     * человеку, у которого просто пропал интернет.
+     */
+    isPaused,
+    refetch,
+  } = useQuery({
     queryKey: SNIPPETS_QUERY_KEY,
     queryFn: () => getMySnippets(trpc),
     enabled: !isGuest,
@@ -89,6 +106,9 @@ export default function useSnippetFilter() {
     sort,
     setSort,
     isLoading,
+    isError,
+    isPaused,
+    refetch,
     mySnippets,
   };
 }

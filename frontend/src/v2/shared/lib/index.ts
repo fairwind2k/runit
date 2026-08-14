@@ -10,3 +10,17 @@ export {
   embedUrl,
   embedCodeFor,
 } from './snippetLinks';
+export type { EditorPrefs, ConsoleLayout } from './editorPrefs';
+export {
+  DEFAULT_EDITOR_PREFS,
+  MIN_FONT_SIZE,
+  MAX_FONT_SIZE,
+  readEditorPrefs,
+  writeEditorPrefs,
+  useEditorPrefs,
+} from './editorPrefs';
+export {
+  FILE_EXTENSIONS,
+  fileExtension,
+  snippetFileName,
+} from './languageFiles';

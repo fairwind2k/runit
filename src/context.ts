@@ -1,6 +1,10 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
+import { eq } from 'drizzle-orm';
+import { ZodError } from 'zod/v4';
 import { verifyAccessToken } from './auth/jwt';
+import { db } from './db/connection';
+import { users } from './db/schema/schema';
 
 export interface AuthenticatedUser {
   id: number;
@@ -31,8 +35,99 @@ export const createContext = ({
   }
 };
 
+/**
+ * Понятное сообщение вместо служебного текста ошибки.
+ *
+ * Два случая, которые видел пользователь:
+ *
+ *  1. Проверка входных данных. tRPC кладёт в message сериализованный ZodError —
+ *     клиенту прилетала строка вида
+ *     `[{"code":"too_big","maximum":30,"path":["name"],...}]`, и интерфейс
+ *     показывал этот JSON как есть.
+ *  2. Внутренняя ошибка. Функции БД-слоя бросают свои тексты («Failed to get
+ *     snippet by ID»), и они уходили в браузер. Это и невнятно, и лишнее:
+ *     наружу не должно попадать ничего о внутреннем устройстве. В логах текст
+ *     остаётся — pino пишет исходную ошибку целиком.
+ */
+const FIELD_LABELS: Record<string, string> = {
+  name: 'имя',
+  code: 'код',
+  slug: 'адрес',
+  email: 'почта',
+  username: 'логин',
+  password: 'пароль',
+  newPassword: 'новый пароль',
+  currentPassword: 'текущий пароль',
+  language: 'язык',
+  visibility: 'видимость',
+  avatarBase64: 'аватар',
+};
+
+/**
+ * Текст одной претензии на русском.
+ *
+ * Свои сообщения (политика пароля, согласие, почта) написаны по-русски и
+ * остаются как есть — их узнаём по кириллице. Остальное приходит от zod
+ * по-английски: «Too big: expected string to have <=30 characters» — так и
+ * доезжало до пользователя.
+ */
+const describeIssue = (issue: ZodError['issues'][number]): string => {
+  if (/[а-яё]/i.test(issue.message)) return issue.message;
+
+  switch (issue.code) {
+    case 'too_big': {
+      const max = issue.maximum;
+      return typeof max === 'bigint' || typeof max === 'number'
+        ? `слишком длинное значение, максимум ${max}`
+        : 'слишком длинное значение';
+    }
+    case 'too_small': {
+      const min = issue.minimum;
+      return min === 1 || min === 1n
+        ? 'обязательное поле'
+        : `слишком короткое значение, минимум ${min}`;
+    }
+    case 'invalid_type':
+      return 'неверный тип значения';
+    case 'invalid_format':
+      return 'неверный формат';
+    case 'invalid_value':
+    case 'invalid_union':
+      return 'недопустимое значение';
+    default:
+      return 'значение не подходит';
+  }
+};
+
+const formatZodIssues = (error: ZodError): string =>
+  error.issues
+    .map((issue) => {
+      const path = issue.path.filter(
+        (part): part is string => typeof part === 'string',
+      );
+      const field = path.length > 0 ? path[path.length - 1] : undefined;
+      const label = field ? (FIELD_LABELS[field] ?? field) : undefined;
+      const message = describeIssue(issue);
+      return label ? `${label}: ${message}` : message;
+    })
+    .join('; ');
+
 const t = initTRPC.context<Context>().create({
-  errorFormatter({ shape }) {
+  errorFormatter({ shape, error }) {
+    if (error.cause instanceof ZodError) {
+      return {
+        ...shape,
+        message: `Некорректные данные — ${formatZodIssues(error.cause)}`,
+      };
+    }
+
+    if (error.code === 'INTERNAL_SERVER_ERROR') {
+      return {
+        ...shape,
+        message: 'Внутренняя ошибка сервера. Попробуйте позже.',
+      };
+    }
+
     return shape;
   },
 });
@@ -48,16 +143,34 @@ const isAuthenticated = t.middleware(({ ctx, next }) => {
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 
-const isAdmin = t.middleware(({ ctx, next }) => {
+/**
+ * Права админа проверяются по базе, а не по токену.
+ *
+ * Признак isAdmin лежит в access-токене, а токен живёт 15 минут и не
+ * отзывается. Значит, после снятия роли человек ещё четверть часа проходил бы
+ * все админские проверки — включая выборку всех сниппетов и поиск по почте.
+ * Разжалование должно действовать сразу, поэтому здесь один дополнительный
+ * запрос: админских вызовов мало, а цена ошибки высока.
+ *
+ * Токен по-прежнему проверяется первым (createContext): без валидной подписи
+ * до базы дело не доходит.
+ */
+const isAdmin = t.middleware(async ({ ctx, next }) => {
   if (!ctx.user) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
 
-  if (!ctx.user.isAdmin) {
+  const [row] = await db
+    .select({ isAdmin: users.isAdmin })
+    .from(users)
+    .where(eq(users.id, ctx.user.id))
+    .limit(1);
+
+  if (!row?.isAdmin) {
     throw new TRPCError({ code: 'FORBIDDEN' });
   }
 
-  return next({ ctx: { ...ctx, user: ctx.user } });
+  return next({ ctx: { ...ctx, user: { ...ctx.user, isAdmin: true } } });
 });
 
 export const protectedProcedure = t.procedure.use(isAuthenticated);

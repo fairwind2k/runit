@@ -199,6 +199,28 @@ describe('регистрация, вход и сессия', () => {
     expect(snippet.visibility).toBe('private');
   });
 
+  /**
+   * Ошибка проверки данных должна читаться человеком. tRPC по умолчанию кладёт
+   * в message сериализованный ZodError, и интерфейс показывал пользователю
+   * строку вида `[{"code":"too_big","maximum":30,...}]`.
+   */
+  test('ошибка валидации приходит текстом, а не JSON-ом zod', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/trpc/snippets.createSnippet',
+      headers: { cookie: cookieHeader(), 'csrf-token': csrfToken },
+      payload: { name: 'x'.repeat(31), code: 'x', language: 'javascript' },
+    });
+
+    const { message } = response.json().error;
+    expect(message).not.toContain('too_big');
+    expect(message).not.toContain('[{');
+    // И по-русски: сообщения zod приходят на английском, их переводим.
+    expect(message).not.toMatch(/[A-Za-z]{4,}/);
+    expect(message).toContain('имя');
+    expect(message).toContain('30');
+  });
+
   test('гость получает UNAUTHORIZED, а не ошибку CSRF', async () => {
     const response = await app.inject({
       method: 'POST',
