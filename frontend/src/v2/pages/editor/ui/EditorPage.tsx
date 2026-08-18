@@ -23,6 +23,7 @@ import { useSession } from '../../../entities/user';
 
 import { ConsolePanel } from '../../../features/run-code';
 import { isPreviewLanguage } from '../../../shared/runner/preview';
+import { unavailableReason, useRunnerStatus } from '../../../shared/runner';
 import { ShareModal } from '../../../features/share-snippet';
 import AddPackageModal from './AddPackageModal';
 
@@ -31,6 +32,7 @@ import {
   STARTER_CODE,
   SAVE_STATUS_META,
   monacoLanguage,
+  useSaveHotkey,
   useSnippetSave,
 } from '..';
 import EditorHeader from './EditorHeader';
@@ -88,6 +90,13 @@ export default function EditorPage() {
    * Расположение консоли учитывается только на широком экране: на узком панели
    * переключаются кнопкой (#842), делить там высоту не на чем.
    */
+  /**
+   * Доступно ли серверное исполнение на этом стенде. Спрашиваем заранее, чтобы
+   * не выяснять это нажатием «Выполнить»: на PaaS без docker девять языков не
+   * запускаются в принципе, и человек видел это только по ошибке в консоли.
+   */
+  const runnerStatus = useRunnerStatus(trpc as never);
+
   const prefs = useEditorPrefs();
   const consoleAtBottom = !isMobile && prefs.consoleLayout === 'bottom';
 
@@ -243,6 +252,15 @@ export default function EditorPage() {
     }
   }, [snippetId, draftNameQuery.data]);
 
+  /**
+   * Ctrl/Cmd+S за пределами редактора: имя сниппета, консоль, вкладка «Ввод».
+   * Внутри Monaco работает своя команда (см. handleEditorMount) — она
+   * перехватывает нажатие раньше и предотвращает диалог браузера сама.
+   */
+  const saveManuallyRef = useRef(saveManually);
+  saveManuallyRef.current = saveManually;
+  useSaveHotkey(saveManually);
+
   /** Обработчик монтирования Monaco Editor: отслеживание позиции курсора и хоткей Ctrl+Enter. */
   const handleEditorMount: OnMount = (editor, monaco) => {
     editor.onDidChangeCursorPosition((e) => {
@@ -251,6 +269,18 @@ export default function EditorPage() {
     // eslint-disable-next-line no-bitwise
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       void runRef.current();
+    });
+    /**
+     * Ctrl/Cmd+S — сохранить сейчас.
+     *
+     * Сохранение и так автоматическое, но привычка жать Ctrl+S сильнее любой
+     * подписи, а браузер на неё открывает диалог «сохранить страницу». Человек
+     * получал окно сохранения HTML вместо своего сниппета и делал вывод, что
+     * сохранения нет вовсе.
+     */
+    // eslint-disable-next-line no-bitwise
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      saveManuallyRef.current();
     });
   };
 
@@ -277,6 +307,9 @@ export default function EditorPage() {
       </Center>
     );
   }
+
+  /** Текст о том, почему этот язык здесь не запустится (null — запустится). */
+  const runnerBlocked = unavailableReason(language, runnerStatus);
 
   const meta = langMeta[language] ?? {
     label: language,
@@ -310,6 +343,15 @@ export default function EditorPage() {
         running={running}
         markDirty={markDirty}
       />
+
+      {runnerBlocked && (
+        <Alert color="yellow" radius={0} py={8}>
+          <Text fz="sm">
+            {runnerBlocked} Запускать можно JavaScript (выполняется в браузере) и
+            HTML/CSS (превью).
+          </Text>
+        </Alert>
+      )}
 
       {isForeign && (
         <Alert color="yellow" radius={0} py={8}>
