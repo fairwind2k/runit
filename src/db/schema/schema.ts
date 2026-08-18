@@ -172,7 +172,6 @@ export const passwordHistory = pgTable(
 );
 
 export const loginAttempts = pgTable('login_attempts', {
-  id: serial('id').primaryKey(),
   /**
    * Ключ — email, а не userId: попытки входа с несуществующим email тоже
    * нужно считать, иначе перебор самого email (существует ли такой
@@ -182,7 +181,6 @@ export const loginAttempts = pgTable('login_attempts', {
   email: varchar('email', { length: 254 }).notNull().unique(),
   failedCount: integer('failed_count').notNull().default(0),
   lastFailedAt: timestamp('last_failed_at', { withTimezone: true }),
-  lockedUntil: timestamp('locked_until', { withTimezone: true }),
 });
 
 /*

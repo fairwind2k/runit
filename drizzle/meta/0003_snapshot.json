@@ -1,5 +1,5 @@
 {
-  "id": "bf038c8e-0017-4eb8-9c4a-3c9b4fa3e93c",
+  "id": "910933c5-a572-4103-89cc-8841bbf4a03a",
   "prevId": "656658ba-b36e-44bd-81e4-d82c5d339f03",
   "version": "7",
   "dialect": "postgresql",
@@ -8,12 +8,6 @@
       "name": "login_attempts",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
         "email": {
           "name": "email",
           "type": "varchar(254)",
@@ -29,12 +23,6 @@
         },
         "last_failed_at": {
           "name": "last_failed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "locked_until": {
-          "name": "locked_until",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
