@@ -171,6 +171,18 @@ export const passwordHistory = pgTable(
   ],
 );
 
+export const loginAttempts = pgTable('login_attempts', {
+  /**
+   * Ключ — email, а не userId: попытки входа с несуществующим email тоже
+   * нужно считать, иначе перебор самого email (существует ли такой
+   * пользователь) остаётся без лимита. Одна строка на email, а не лог
+   * попыток — обновляется на месте при каждой неудаче.
+   */
+  email: varchar('email', { length: 254 }).notNull().unique(),
+  failedCount: integer('failed_count').notNull().default(0),
+  lastFailedAt: timestamp('last_failed_at', { withTimezone: true }),
+});
+
 /*
  * Блоки relations() здесь были, но их удалили.
  *
@@ -185,6 +197,7 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type NewRefreshToken = typeof refreshTokens.$inferInsert;
 export type NewPasswordHistoryEntry = typeof passwordHistory.$inferInsert;
+export type LoginAttempt = typeof loginAttempts.$inferSelect;
 export type Snippet = typeof snippets.$inferSelect;
 export type NewSnippet = typeof snippets.$inferInsert;
 export type UserSettings = typeof userSettings.$inferSelect;
