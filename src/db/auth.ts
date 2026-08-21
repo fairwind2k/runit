@@ -134,6 +134,17 @@ export async function addPasswordHistoryEntry(
  * Email приходит уже нормализованным через emailSchema (trim + toLowerCase,
  * см. src/auth/email.ts) — повторной нормализации здесь нет намеренно, чтобы
  * не дублировать её в двух местах и не разойтись с схемой ввода.
+ *
+ * TODO: сейчас этот инвариант держится только на этом комментарии — тип
+ * параметра email всюду ниже просто string, и ничто не мешает передать сюда
+ * сырую строку в обход emailSchema. Ужесточить до branded type:
+ *   export type NormalizedEmail = string & { readonly __brand: 'NormalizedEmail' };
+ * в src/auth/email.ts, привести normalizeEmail к сигнатуре
+ * (email: string) => NormalizedEmail и поменять email: string на
+ * email: NormalizedEmail в сигнатурах recordFailedLoginAttempt,
+ * resetLoginAttempts и getLoginAttempt ниже — тогда emailSchema возвращает
+ * NormalizedEmail, и передать сюда непрошедшую нормализацию строку не даст
+ * уже компилятор, а не только память того, кто вызывает эти функции.
  */
 export async function recordFailedLoginAttempt(email: string): Promise<void> {
   await db

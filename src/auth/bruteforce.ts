@@ -1,4 +1,5 @@
 import type { LoginAttempt } from '../db/schema/schema';
+import { parsePositiveNumber } from '../utils/parse-positive-number';
 
 /**
  * Анти-брутфорс на вход (#858) — фиксированная блокировка, без роста задержки:
@@ -7,13 +8,11 @@ import type { LoginAttempt } from '../db/schema/schema';
  * и RATE_LIMIT_* в security.ts — порог и длительность может понадобиться
  * поменять без деплоя кода (короче в тестах, длиннее при инциденте).
  */
-function num(raw: string | undefined, fallback: number): number {
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-export const LOCKOUT_THRESHOLD = num(process.env.LOGIN_LOCKOUT_THRESHOLD, 5);
-export const LOCKOUT_DURATION_MS = num(
+export const LOCKOUT_THRESHOLD = parsePositiveNumber(
+  process.env.LOGIN_LOCKOUT_THRESHOLD,
+  5,
+);
+export const LOCKOUT_DURATION_MS = parsePositiveNumber(
   process.env.LOGIN_LOCKOUT_DURATION_MS,
   60_000,
 );
